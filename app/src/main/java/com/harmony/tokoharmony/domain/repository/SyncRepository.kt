@@ -11,6 +11,7 @@ interface SyncRepository {
     suspend fun getPendingItems(limit: Int = 50): List<SyncQueueItem>
     fun getPendingCount(): Flow<Int>
     fun getFailedCount(): Flow<Int>
+    fun getSyncedTodayCount(startOfDay: Long): Flow<Int>
     fun getLastSyncTime(): Flow<Long?>
     suspend fun syncPendingBatch(limit: Int = 50): SyncBatchResult
     suspend fun resetStaleSyncing(staleThresholdMs: Long = 5 * 60 * 1000L): Int

@@ -72,6 +72,7 @@ import com.harmony.tokoharmony.ui.theme.MintSecondary
 import com.harmony.tokoharmony.ui.theme.MintSecondaryContainer
 import com.harmony.tokoharmony.ui.theme.OnMintSecondaryContainer
 import com.harmony.tokoharmony.ui.theme.OnSurfaceDark
+import com.harmony.tokoharmony.ui.theme.OutlineBorder
 import com.harmony.tokoharmony.ui.theme.SurfaceBackground
 import com.harmony.tokoharmony.ui.theme.SurfaceContainer
 import com.harmony.tokoharmony.ui.theme.SurfaceContainerHigh
@@ -410,7 +411,7 @@ fun StockOpnameScreen(
                                                 Icon(
                                                     imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                                                     contentDescription = null,
-                                                    tint = if (isSelected) EmeraldPrimary else MaterialTheme.colorScheme.outline,
+                                                    tint = if (isSelected) EmeraldPrimary else OutlineBorder,
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                                 Text(

@@ -76,6 +76,8 @@ import com.harmony.tokoharmony.ui.theme.StatusInactiveBg
 import com.harmony.tokoharmony.ui.theme.StatusInactiveText
 import com.harmony.tokoharmony.ui.theme.StatusWarningBg
 import com.harmony.tokoharmony.ui.theme.StatusWarningText
+import com.harmony.tokoharmony.ui.theme.OutlineBorder
+import com.harmony.tokoharmony.ui.theme.OutlineVariant
 import com.harmony.tokoharmony.ui.theme.SurfaceContainer
 import com.harmony.tokoharmony.ui.theme.SurfaceContainerHigh
 import com.harmony.tokoharmony.ui.theme.SurfaceContainerLow
@@ -157,14 +159,14 @@ fun ProductListScreen(
                         Text(
                             text = "Cari nama barang atau barcode...",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = OutlineBorder
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
+                            tint = OutlineBorder,
                             modifier = Modifier.size(20.dp)
                         )
                     },
@@ -174,7 +176,7 @@ fun ProductListScreen(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Bersihkan pencarian",
-                                    tint = MaterialTheme.colorScheme.outline
+                                    tint = OutlineBorder
                                 )
                             }
                         }
@@ -270,7 +272,7 @@ fun ProductListScreen(
                             imageVector = Icons.Default.Inventory2,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.outlineVariant
+                            tint = OutlineVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -283,7 +285,7 @@ fun ProductListScreen(
                         Text(
                             text = "Tekan tombol '+ Produk' di atas untuk mendaftar.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
+                            color = OutlineBorder
                         )
                     }
                 }
@@ -362,7 +364,7 @@ fun ProductItemCard(
                                 text = product.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = if (product.isActive) OnSurfaceDark else MaterialTheme.colorScheme.outline
+                                color = if (product.isActive) OnSurfaceDark else OutlineBorder
                             )
                             if (!product.isActive) {
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -381,20 +383,20 @@ fun ProductItemCard(
                                         imageVector = Icons.Default.QrCode,
                                         contentDescription = null,
                                         modifier = Modifier.size(12.dp),
-                                        tint = MaterialTheme.colorScheme.outline
+                                        tint = OutlineBorder
                                     )
                                     Spacer(modifier = Modifier.width(2.dp))
                                     Text(
                                         text = product.barcode,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.outline,
+                                        color = OutlineBorder,
                                         fontSize = 10.sp
                                     )
                                 }
                                 Box(
                                     modifier = Modifier
                                         .size(3.dp)
-                                        .background(MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                        .background(OutlineVariant, CircleShape)
                                 )
                             }
                             Surface(

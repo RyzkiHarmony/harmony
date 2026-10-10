@@ -41,6 +41,9 @@ interface SyncQueueDao {
     @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'FAILED'")
     fun getFailedCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'SYNCED' AND (synced_at >= :startOfDay OR (synced_at IS NULL AND created_at >= :startOfDay))")
+    fun getSyncedTodayCount(startOfDay: Long): Flow<Int>
+
     @Query("SELECT MAX(synced_at) FROM sync_queue WHERE status = 'SYNCED'")
     fun getLastSyncTime(): Flow<Long?>
 

@@ -45,6 +45,7 @@ class AdminSyncViewModel @Inject constructor(
                     current.copy(
                         pendingCount = statusInfo.pendingCount,
                         failedCount = statusInfo.failedCount,
+                        syncedTodayCount = statusInfo.syncedTodayCount,
                         lastSyncTime = statusInfo.lastSyncTime ?: if (syncConfig.lastSyncTimestamp > 0) syncConfig.lastSyncTimestamp else null
                     )
                 }
@@ -152,7 +153,8 @@ class AdminSyncViewModel @Inject constructor(
             val result = bootstrapDataUseCase()
             if (result.isSuccess) {
                 val data = result.getOrThrow()
-                val summary = "Pemulihan berhasil: ${data.products.size} produk, ${data.categories.size} kategori, ${data.transactions.size} transaksi, ${data.stockMovements.size} mutasi stok."
+                val catText = if (data.categories.isNotEmpty()) "${data.categories.size} kategori" else "kategori master aktif"
+                val summary = "Pemulihan berhasil: ${data.products.size} produk, $catText, ${data.transactions.size} transaksi, ${data.stockMovements.size} mutasi stok."
                 _uiState.update {
                     it.copy(
                         isRestoring = false,

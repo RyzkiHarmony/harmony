@@ -490,7 +490,7 @@ fun AdminSyncScreen(
                                     )
                                 }
                                 Text(
-                                    text = "${(uiState.pendingCount + 42).coerceAtLeast(0)}",
+                                    text = "${uiState.syncedTodayCount}",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = EmeraldPrimary,

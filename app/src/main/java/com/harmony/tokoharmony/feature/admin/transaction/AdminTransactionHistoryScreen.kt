@@ -67,6 +67,8 @@ import com.harmony.tokoharmony.ui.theme.MintSecondary
 import com.harmony.tokoharmony.ui.theme.MintSecondaryContainer
 import com.harmony.tokoharmony.ui.theme.OnMintSecondaryContainer
 import com.harmony.tokoharmony.ui.theme.OnSurfaceDark
+import com.harmony.tokoharmony.ui.theme.OutlineBorder
+import com.harmony.tokoharmony.ui.theme.OutlineVariant
 import com.harmony.tokoharmony.ui.theme.SurfaceContainer
 import com.harmony.tokoharmony.ui.theme.SurfaceContainerHigh
 import com.harmony.tokoharmony.ui.theme.SurfaceContainerLow
@@ -266,7 +268,7 @@ fun AdminTransactionHistoryScreen(
                         Text(
                             text = "Menampilkan ${uiState.transactions.size} transaksi",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = OutlineBorder
                         )
                         if (isAnyFilterActive) {
                             TextButton(onClick = { viewModel.resetFilters() }) {
@@ -304,7 +306,7 @@ fun AdminTransactionHistoryScreen(
                             imageVector = Icons.Default.ReceiptLong,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.outlineVariant
+                            tint = OutlineVariant
                         )
                         Text(
                             text = if (isAnyFilterActive) "Tidak ada transaksi yang cocok dengan filter." else "Belum ada riwayat transaksi.",
@@ -436,7 +438,7 @@ private fun AdminTransactionCard(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.outline
+                        tint = OutlineBorder
                     )
                     Text(
                         text = dateStr,
@@ -459,7 +461,7 @@ private fun AdminTransactionCard(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         modifier = Modifier.size(12.dp),
-                        tint = MaterialTheme.colorScheme.outline
+                        tint = OutlineBorder
                     )
                 }
             }

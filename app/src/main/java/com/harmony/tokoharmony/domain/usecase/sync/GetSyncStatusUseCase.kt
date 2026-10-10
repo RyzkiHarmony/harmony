@@ -10,15 +10,25 @@ class GetSyncStatusUseCase @Inject constructor(
     private val syncRepository: SyncRepository
 ) {
     operator fun invoke(): Flow<SyncStatusInfo> {
+        val cal = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        val startOfDay = cal.timeInMillis
+
         return combine(
             syncRepository.getPendingCount(),
             syncRepository.getFailedCount(),
-            syncRepository.getLastSyncTime()
-        ) { pending, failed, lastTime ->
+            syncRepository.getLastSyncTime(),
+            syncRepository.getSyncedTodayCount(startOfDay)
+        ) { pending, failed, lastTime, syncedToday ->
             SyncStatusInfo(
                 pendingCount = pending,
                 failedCount = failed,
-                lastSyncTime = lastTime
+                lastSyncTime = lastTime,
+                syncedTodayCount = syncedToday
             )
         }
     }

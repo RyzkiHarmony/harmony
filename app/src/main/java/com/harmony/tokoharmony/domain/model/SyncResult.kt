@@ -19,5 +19,6 @@ data class SyncBatchResult(
 data class SyncStatusInfo(
     val pendingCount: Int,
     val failedCount: Int,
-    val lastSyncTime: Long?
+    val lastSyncTime: Long?,
+    val syncedTodayCount: Int = 0
 )

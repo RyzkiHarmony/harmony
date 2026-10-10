@@ -1,5 +1,6 @@
 package com.harmony.tokoharmony.data.repository
 
+import android.util.Log
 import androidx.room.withTransaction
 import com.harmony.tokoharmony.core.database.AppDatabase
 import com.harmony.tokoharmony.core.database.dao.CategoryDao
@@ -13,6 +14,8 @@ import com.harmony.tokoharmony.core.database.dao.SyncQueueDao
 import com.harmony.tokoharmony.core.database.dao.TransactionDao
 import com.harmony.tokoharmony.core.database.dao.TransactionItemDao
 import com.harmony.tokoharmony.core.database.dao.UserDao
+import com.harmony.tokoharmony.core.database.entity.CategoryEntity
+import com.harmony.tokoharmony.core.database.entity.UserEntity
 import com.harmony.tokoharmony.core.network.HttpSyncClient
 import com.harmony.tokoharmony.core.network.SyncConfig
 import com.harmony.tokoharmony.core.network.SyncJsonMapper
@@ -78,6 +81,10 @@ class SyncRepositoryImpl @Inject constructor(
 
     override fun getFailedCount(): Flow<Int> {
         return syncQueueDao.getFailedCount()
+    }
+
+    override fun getSyncedTodayCount(startOfDay: Long): Flow<Int> {
+        return syncQueueDao.getSyncedTodayCount(startOfDay)
     }
 
     override fun getLastSyncTime(): Flow<Long?> {
@@ -225,28 +232,110 @@ class SyncRepositoryImpl @Inject constructor(
         return try {
             appDatabase.withTransaction {
                 // Dependency order insertion with foreign-key integrity validation
+
                 // 1. Users
+                // Ensure base system users exist so foreign keys on created_by are never violated
+                if (userDao.getUserById("admin-primary") == null) {
+                    userDao.insertUser(
+                        UserEntity(
+                            userId = "admin-primary",
+                            displayName = "Admin / Orang Tua",
+                            role = "ADMIN",
+                            pinHash = "",
+                            isActive = true
+                        )
+                    )
+                }
+                if (userDao.getUserById("cashier-primary") == null) {
+                    userDao.insertUser(
+                        UserEntity(
+                            userId = "cashier-primary",
+                            displayName = "Kasir Toko",
+                            role = "CASHIER",
+                            pinHash = "",
+                            isActive = true
+                        )
+                    )
+                }
                 if (data.users.isNotEmpty()) {
                     userDao.insertUsers(data.users.map { it.toEntity() })
                 }
-                val availableUserIds = data.users.map { it.userId }.toSet()
+                val availableUserIds = (data.users.map { it.userId } + setOf("admin-primary", "cashier-primary")).toMutableSet()
+
+                // Dynamically resolve any referenced user from transactions/stock movements/stock ins
+                val referencedUserIds = (data.transactions.map { it.createdBy } +
+                        data.transactions.mapNotNull { it.cancelledBy } +
+                        data.stockIns.map { it.createdBy } +
+                        data.stockAdjustments.map { it.createdBy } +
+                        data.stockMovements.map { it.createdBy } +
+                        data.priceHistories.map { it.changedBy }).filter { it.isNotBlank() }.toSet()
+
+                for (uId in referencedUserIds) {
+                    if (!availableUserIds.contains(uId)) {
+                        val existing = userDao.getUserById(uId)
+                        if (existing != null) {
+                            availableUserIds.add(uId)
+                        } else {
+                            userDao.insertUser(
+                                UserEntity(
+                                    userId = uId,
+                                    displayName = if (uId.contains("admin", ignoreCase = true)) "Admin Toko" else "Kasir Toko",
+                                    role = if (uId.contains("admin", ignoreCase = true)) "ADMIN" else "CASHIER",
+                                    pinHash = "",
+                                    isActive = true
+                                )
+                            )
+                            availableUserIds.add(uId)
+                        }
+                    }
+                }
 
                 // 2. Categories
                 if (data.categories.isNotEmpty()) {
                     categoryDao.insertCategories(data.categories.map { it.toEntity() })
                 }
-                val availableCategoryIds = data.categories.map { it.categoryId }.toSet()
+                val availableCategoryIds = data.categories.map { it.categoryId }.toMutableSet()
+
+                // Resolve categories referenced by remote products:
+                // Check if they exist locally, or create a fallback category so foreign-key constraint is satisfied
+                for (prod in data.products) {
+                    if (!availableCategoryIds.contains(prod.categoryId)) {
+                        val existingCat = categoryDao.getCategoryById(prod.categoryId)
+                        if (existingCat != null) {
+                            availableCategoryIds.add(prod.categoryId)
+                        } else {
+                            val fallbackCategory = CategoryEntity(
+                                categoryId = prod.categoryId,
+                                name = "Umum",
+                                isActive = true
+                            )
+                            categoryDao.insertCategory(fallbackCategory)
+                            availableCategoryIds.add(prod.categoryId)
+                        }
+                    }
+                }
 
                 // 3. Products (must reference valid category)
                 val validProducts = data.products.filter { availableCategoryIds.contains(it.categoryId) }
                 if (validProducts.isNotEmpty()) {
                     productDao.insertProducts(validProducts.map { it.toEntity() })
                 }
-                val availableProductIds = validProducts.map { it.productId }.toSet()
+                val availableProductIds = validProducts.map { it.productId }.toMutableSet()
+
+                // Helper to check if a product is valid (either freshly restored or already present in Room DB)
+                suspend fun isProductAvailable(pId: String): Boolean {
+                    if (availableProductIds.contains(pId)) return true
+                    val existing = productDao.getProductById(pId)
+                    if (existing != null) {
+                        availableProductIds.add(pId)
+                        return true
+                    }
+                    return false
+                }
 
                 // 4. Price History (must reference valid product and user)
                 val validPriceHistories = data.priceHistories.filter {
-                    availableProductIds.contains(it.productId) && (it.changedBy.isBlank() || availableUserIds.contains(it.changedBy))
+                    isProductAvailable(it.productId) && (it.changedBy.isBlank() || availableUserIds.contains(it.changedBy))
                 }
                 if (validPriceHistories.isNotEmpty()) {
                     priceHistoryDao.insertPriceHistories(validPriceHistories.map { it.toEntity() })
@@ -263,7 +352,7 @@ class SyncRepositoryImpl @Inject constructor(
 
                 // 6. Transaction Items (must reference valid transaction and product)
                 val validTransactionItems = data.transactionItems.filter {
-                    availableTransactionIds.contains(it.transactionId) && availableProductIds.contains(it.productId)
+                    availableTransactionIds.contains(it.transactionId) && isProductAvailable(it.productId)
                 }
                 if (validTransactionItems.isNotEmpty()) {
                     transactionItemDao.insertTransactionItems(validTransactionItems.map { it.toEntity() })
@@ -280,7 +369,7 @@ class SyncRepositoryImpl @Inject constructor(
 
                 // 7. Stock Ins (must reference valid product and user)
                 val validStockIns = data.stockIns.filter {
-                    availableProductIds.contains(it.productId) && availableUserIds.contains(it.createdBy)
+                    isProductAvailable(it.productId) && availableUserIds.contains(it.createdBy)
                 }
                 if (validStockIns.isNotEmpty()) {
                     stockInDao.insertStockIns(validStockIns.map { it.toEntity() })
@@ -288,7 +377,7 @@ class SyncRepositoryImpl @Inject constructor(
 
                 // 8. Stock Adjustments (must reference valid product and user)
                 val validStockAdjustments = data.stockAdjustments.filter {
-                    availableProductIds.contains(it.productId) && availableUserIds.contains(it.createdBy)
+                    isProductAvailable(it.productId) && availableUserIds.contains(it.createdBy)
                 }
                 if (validStockAdjustments.isNotEmpty()) {
                     stockAdjustmentDao.insertStockAdjustments(validStockAdjustments.map { it.toEntity() })
@@ -296,14 +385,17 @@ class SyncRepositoryImpl @Inject constructor(
 
                 // 9. Stock Movements (must reference valid product and user)
                 val validStockMovements = data.stockMovements.filter {
-                    availableProductIds.contains(it.productId) && availableUserIds.contains(it.createdBy)
+                    isProductAvailable(it.productId) && availableUserIds.contains(it.createdBy)
                 }
                 if (validStockMovements.isNotEmpty()) {
                     stockMovementDao.insertStockMovements(validStockMovements.map { it.toEntity() })
                 }
+
+                Log.d("SyncRepository", "Restore complete: ${validProducts.size} products, ${availableCategoryIds.size} categories, ${validTransactions.size} transactions, ${validStockMovements.size} stock movements")
             }
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("SyncRepository", "Restore failed: ${e.message}", e)
             Result.failure(e)
         }
     }

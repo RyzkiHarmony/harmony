@@ -7,6 +7,7 @@ data class AdminSyncUiState(
     val isConfigured: Boolean = false,
     val pendingCount: Int = 0,
     val failedCount: Int = 0,
+    val syncedTodayCount: Int = 0,
     val lastSyncTime: Long? = null,
     val isSyncing: Boolean = false,
     val isRestoring: Boolean = false,
